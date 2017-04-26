@@ -39,14 +39,9 @@ where
     // apply handlebars processing
     let apply = |path: &Path, hbs: &mut Handlebars| -> errors::Result<()> {
 
-        // /tmp/download_dir/templates
         let scratchpath = &format!(
             "{}{}",
-            &adjusted_path
-                 .as_ref()
-                 .join("template")
-                 .to_str()
-                 .unwrap(),
+            &adjusted_path.as_ref().to_str().unwrap(),
             MAIN_SEPARATOR
         )
                                [..];
@@ -76,7 +71,7 @@ where
 
     create_dir_all(target.as_ref())?;
     let mut hbs = bars();
-    for entry in WalkDir::new(&adjusted_path.as_ref().join("template"))
+    for entry in WalkDir::new(&adjusted_path.as_ref())
             .into_iter()
             .skip(1)
             .filter_map(|e| e.ok()) {
