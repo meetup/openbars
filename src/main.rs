@@ -28,29 +28,22 @@ pub mod errors {
 
 use errors::ResultExt;
 
-/// Apply template
-fn apply_template<P, T>(adjusted_path: P, target: T, spec: &Spec) -> errors::Result<()>
+fn apply_template<P, T>(template: P, target: T, spec: &Spec) -> errors::Result<()>
 where
     P: AsRef<Path>,
     T: AsRef<Path>,
 {
-    let ctx = spec;
-
     // apply handlebars processing
     let apply = |path: &Path, hbs: &mut Handlebars| -> errors::Result<()> {
 
-        let scratchpath = &format!(
-            "{}{}",
-            &adjusted_path.as_ref().to_str().unwrap(),
-            MAIN_SEPARATOR
-        )
+        let scratchpath = &format!("{}{}", &template.as_ref().to_str().unwrap(), MAIN_SEPARATOR)
                                [..];
 
         // path relatived based on scratch dir
         let localpath = path.to_str().unwrap().trim_left_matches(scratchpath);
 
         // eval path as template
-        let evalpath = hbs.template_render(&localpath, &ctx)
+        let evalpath = hbs.template_render(&localpath, &spec)
             .chain_err(|| format!("failed to render template {}", localpath))?;
 
         // rewritten path, based on target dir and eval path
@@ -64,14 +57,14 @@ where
             let mut s = String::new();
             file.read_to_string(&mut s)?;
             let mut file = File::create(targetpath)?;
-            hbs.template_renderw(&s, &ctx, &mut file)?;
+            hbs.template_renderw(&s, &spec, &mut file)?;
         }
         Ok(())
     };
 
     create_dir_all(target.as_ref())?;
     let mut hbs = bars();
-    for entry in WalkDir::new(&adjusted_path.as_ref())
+    for entry in WalkDir::new(&template.as_ref())
             .into_iter()
             .skip(1)
             .filter_map(|e| e.ok()) {
@@ -109,8 +102,12 @@ pub fn bars() -> Handlebars {
 }
 
 fn run(args: ArgMatches) -> errors::Result<()> {
-    let spec = openapi::from_path(args.value_of("spec").unwrap())?;
-    let template = args.value_of("template").unwrap();
+    let spec = openapi::from_path(
+        args.value_of("spec")
+            .expect("expected spec to be required"),
+    )?;
+    let template = args.value_of("template")
+        .expect("expected template to be required");
     let target = args.value_of("target").unwrap_or(".");
     apply_template(template, target, &spec)?;
     Ok(())
