@@ -1,0 +1,12 @@
+[package]
+name = "openbars"
+version = "0.1.0"
+authors = ["softprops <d.tangren@gmail.com>"]
+
+[dependencies]
+clap = "2.23"
+env_logger = "0.4"
+error-chain = "0.10"
+openapi = "0.1"
+handlebars = "0.26.1"
+walkdir = "1.0"
