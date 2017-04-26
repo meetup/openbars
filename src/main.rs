@@ -7,6 +7,7 @@ extern crate log;
 extern crate env_logger;
 extern crate openapi;
 extern crate walkdir;
+extern crate serde_json;
 
 use clap::{ArgMatches, App, Arg};
 use handlebars::{Handlebars, Helper, RenderContext, RenderError};
@@ -97,6 +98,40 @@ pub fn bars() -> Handlebars {
 
     transform(&mut hbs, "upper", str::to_uppercase);
     transform(&mut hbs, "lower", str::to_lowercase);
+    /// http://swagger.io/specification/#data-types-12
+    /// {{ datatype type format }}
+    /// fixme: this will be ctx specific!
+    hbs.register_helper(
+        "datatype",
+        Box::new(
+            move |h: &Helper,
+                  _: &Handlebars,
+                  rc: &mut RenderContext|
+                  -> ::std::result::Result<(), RenderError> {
+                // assume string args
+                let typ: String = match h.params().get(0).unwrap().value() {
+                    &::serde_json::Value::String(ref value) => value.clone(),
+                    _ => unreachable!(),
+                };
+                let fmt: String = match h.params().get(1).map(|p| p.value()) {
+                        Some(&::serde_json::Value::String(ref value)) => Some(value.clone()),
+                        _ => None,
+                    }
+                    .unwrap_or("-".into());
+                let datatype = match (typ.as_str(), fmt.as_str()) {
+                    ("integer", "int32") => "i32",
+                    ("integer", "int64") => "i64",
+                    ("number", "float") => "f64",
+                    ("number", "double") => "f32",
+                    ("bool", _) => "bool",
+                    ("string", _) => "String", // todo: handle formats
+                    _ => "String",
+                };
+                rc.writer.write(datatype.as_bytes())?;
+                Ok(())
+            },
+        ),
+    );
 
     hbs
 }
