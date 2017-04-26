@@ -2,6 +2,9 @@ extern crate clap;
 #[macro_use]
 extern crate error_chain;
 extern crate handlebars;
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 extern crate openapi;
 extern crate walkdir;
 
@@ -77,7 +80,7 @@ where
             .into_iter()
             .skip(1)
             .filter_map(|e| e.ok()) {
-        println!("applying {:?}", entry.path().display());
+        debug!("applying {:?}", entry.path().display());
         apply(entry.path(), &mut hbs)?
     }
     Ok(())
@@ -119,6 +122,7 @@ fn run(args: ArgMatches) -> errors::Result<()> {
 }
 
 fn main() {
+    env_logger::init().unwrap();
     let args = App::new(env!("CARGO_PKG_NAME"))
        .version(env!("CARGO_PKG_VERSION"))
        .about("portable openapi handlebars templates")
